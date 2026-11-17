@@ -1,6 +1,6 @@
--- 데이터베이스 생성 (DDL: Data Definition Language)
+-- 데이터베이스 생성 (DDL: Data Definition Lauguage)
 CREATE DATABASE sportscenter;
-
+-- 1장에서 만든 테이블 6개(member)
 -- 회원 테이블 tbs_테이블명, viw_뷰명 (DDL)
 
 CREATE TABLE members
@@ -27,6 +27,7 @@ CREATE TABLE members
 -- (컬럼1값, 컬럼2값, 컬럼3값),
 -- (컬럼1값, 컬럼2값, 컬럼3값)
 
+-- DML : Data Manipulate Lauguage
 INSERT INTO members 
 (
     name, 
@@ -52,7 +53,7 @@ VALUES
 CREATE TABLE sports
 (
     sports_id   SERIAL      PRIMARY KEY,
-    sport_name  VARCHAR(20) NOT NULL
+    sport_name  VARCHAR(20) NOT NULL 
 );
 
 INSERT INTO sports (sport_name) VALUES ('수영');
@@ -79,6 +80,8 @@ VALUES (2, '헬스 자유이용', '자유', '매일', '06:00', 50, 50000);
 INSERT INTO courses (sports_id, course_name, level, class_days, start_time, capacity, fee)
 VALUES (30, '헬스 자유이용', '자유', '매일', '06:00', 50, 50000);
 
+DROP TABLE IF EXISTS lockers;
+
 -- 1:1 사물함 테이블
 CREATE TABLE lockers
 (
@@ -88,8 +91,84 @@ CREATE TABLE lockers
 );
 
 INSERT INTO lockers VALUES (101, 1, '2026-11-01');
-INSERT INTO lockers VALUES (102, 3, '2026-11-01'); -- 임시회원
 
+-- 삭제 테스트를 위한 임시 회원 추가
 INSERT INTO members (name, gender, birth_year, join_date)
 VALUES ('임시회원', 'M', 2000, '2026-11-01');
-SELECT member_id, name FROM members;
+
+-- 임시 회원의 락커 배정
+INSERT INTO lockers VALUES (102, 3, '2026-11-01');
+
+-- 회원 삭제 시 사물함도 함께 삭제되는지 확인
+DELETE FROM members WHERE member_id = 3;
+
+-- 사물함이 삭제되었는지 확인
+SELECT * FROM lockers; 
+
+-- 수강 신청 테이블
+
+CREATE TABLE enrollments
+(
+    member_id       INT             NOT NULL REFERENCES members (member_id),
+    course_id       INT             NOT NULL REFERENCES courses (course_id),
+    enroll_month    CHAR(7)         NOT NULL,
+    status          VARCHAR(10)     NOT NULL,
+    pay_amount      NUMERIC(10,2)    NOT NULL CHECK (pay_amount >=0),
+    PRIMARY KEY (member_id, course_id, enroll_month)
+);
+
+INSERT INTO enrollments
+VALUES (1, 1, '2026-11', '수료', 50000);
+
+INSERT INTO enrollments
+VALUES (2, 2, '2026-10', '수료', 70000);
+
+INSERT INTO enrollments
+VALUES (2, 2, '2026-10', '수료', 60000);
+
+CREATE TABLE instructors
+(
+instructor_id       SERIAL          PRIMARY KEY,
+name                VARCHAR(20)     NOT NULL,
+sports_id            INT             NOT NULL REFERENCES sports(sports_id),
+phone               VARCHAR(20),     
+hire_date           DATE            NOT NULL
+);
+
+INSERT INTO instructors (name, sports_id, phone, hire_date)
+VALUES 
+('홍길동', 1, '010-1234-1234', '2025-01-01'),
+('손흥민', 2, '010-1234-8080', '2025-01-10');
+
+
+-- 테이블 수정 ALTER TABLE
+
+ALTER TABLE courses
+ADD COLUMN instructor_id INT REFERENCES instructors (instructor_id);
+
+
+SELECT 
+course_name AS 강좌명,
+fee AS 수강료,
+fee * 3 AS "3개월 수강료"
+FROM courses
+LIMIT 5;
+
+SELECT DISTINCT region FROM members;
+
+SELECT DISTINCT sport_id, level FROM courses;
+
+SELECT * FROM members WHERE member_id <= 7;
+
+SELECT * FROM members WHERE region = '마포구';
+
+SELECT * FROM members WHERE email IS NULL;
+
+SELECT COUNT(*) AS "E-MAIL 미기재" FROM members WHERE email IS NULL;
+
+SELECT * FROM members WHERE birth_year BETWEEN 1995 AND 2000;
+
+SELECT * FROM courses WHERE course_id IN (1, 5, 10);
+
+SELECT * FROM members WHERE name LIKE '이%';
+SELECT * FROM members WHERE name LIKE '김%';
