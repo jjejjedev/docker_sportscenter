@@ -1,0 +1,82 @@
+ORDER BY region COLLATE "ko-x-icu";
+
+-- 1. 연락처 점검 대상 회원
+-- 1번
+SELECT
+    member_id AS "회원번호",
+    name AS "이름",
+    birth_year AS "출생연도",
+    region AS "거주지역",
+    phone AS "전화번호"
+FROM members
+WHERE birth_year BETWEEN 1970 AND 1989
+  AND email IS NULL
+ORDER BY birth_year ASC, member_id ASC;
+
+-- 2. 지역, 성별 회원 현황
+-- 2번
+SELECT
+    region AS "거주지역",
+    CASE
+        WHEN gender = 'F' THEN '여'
+        WHEN gender = 'M' THEN '남'
+    END AS "성별",
+    COUNT(*) AS "회원수",
+    ROUND(AVG(birth_year)) AS "평균출생연도"
+FROM members
+GROUP BY region, gender
+HAVING COUNT(*) >= 5
+ORDER BY "거주지역" ASC, "성별" ASC;
+
+-- 3. 10월 수강 취소 명단
+-- 3번
+SELECT
+    m.name AS "회원명",
+    m.phone AS "전화번호",
+    c.course_name AS "강좌명",
+    e.enroll_month AS "수강월"
+FROM enrollments AS e
+INNER JOIN members AS m
+    ON e.member_id = m.member_id
+INNER JOIN courses AS c
+    ON e.course_id = c.course_id
+WHERE e.enroll_month = '2026-10'
+  AND e.status = '취소'
+ORDER BY m.name ASC;
+
+-- 4. 종목별 월 매출
+-- 4번
+SELECT
+    s.sport_name AS "종목",
+    e.enroll_month AS "수강월",
+    COUNT(*) AS "수강인원",
+    SUM(e.pay_amount) AS "매출"
+FROM enrollments AS e
+INNER JOIN courses AS c
+    ON e.course_id = c.course_id
+INNER JOIN sports AS s
+    ON c.sport_id = s.sport_id
+WHERE e.status <> '취소'
+GROUP BY s.sport_name, e.enroll_month
+HAVING SUM(e.pay_amount) >= 1000000
+ORDER BY
+    s.sport_name COLLATE "ko-x-icu" ASC,
+    e.enroll_month ASC;
+
+-- 5. 강사별 담당 강좌와 이번 달 신청
+-- 5번
+SELECT
+    i.name AS "강사명",
+    s.sport_name AS "종목",
+    COUNT(DISTINCT c.course_id) AS "담당강좌수",
+    COUNT(e.course_id) AS "이번달신청"
+FROM instructors AS i
+LEFT JOIN sports AS s
+    ON i.sport_id = s.sport_id
+LEFT JOIN courses AS c
+    ON i.instructor_id = c.instructor_id
+LEFT JOIN enrollments AS e
+    ON c.course_id = e.course_id
+    AND e.enroll_month = '2026-11'
+GROUP BY i.instructor_id, i.name, s.sport_name
+ORDER BY "이번달신청" DESC, "강사명" ASC;
